@@ -1,6 +1,16 @@
 
 locals {
   function_name = "${var.env}-${var.rev}-${var.name}-${random_pet.main.id}"
+  repository_name = "${var.name}-${random_pet.main.id}"
+}
+
+resource "aws_ecr_repository" "main" {
+  name                 = local.repository_name
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
 
 resource "aws_lambda_function" "main" {
