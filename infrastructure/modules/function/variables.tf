@@ -8,8 +8,8 @@ variable "description" {
   type        = string
 }
 
-variable "file" {
-  description = "The binary file for the lambda"
+variable "dockerfile" {
+  description = "The path to the Dockerfile"
   type        = string
 }
 

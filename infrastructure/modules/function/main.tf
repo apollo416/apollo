@@ -1,6 +1,6 @@
 
 locals {
-  function_name = "${var.env}-${var.rev}-${var.name}-${random_pet.main.id}"
+  function_name   = "${var.env}-${var.rev}-${var.name}-${random_pet.main.id}"
   repository_name = "${var.name}-${random_pet.main.id}"
 }
 
@@ -13,15 +13,20 @@ resource "aws_ecr_repository" "main" {
   }
 }
 
+data "aws_ecr_image" "lambda_image" {
+  repository_name = aws_ecr_repository.main.name
+  image_tag       = var.rev
+}
+
 resource "aws_lambda_function" "main" {
   function_name = local.function_name
   description   = var.description
   role          = aws_iam_role.main.arn
-  filename      = var.file
+  package_type  = "Image"
+  image_uri     = "${aws_ecr_repository.main.repository_url}@${data.aws_ecr_image.lambda_image.image_digest}"
+
   memory_size   = 256
   timeout       = 3
-  handler       = "bootstrap"
-  runtime       = "provided.al2023"
   logging_config {
     log_format            = "JSON"
     system_log_level      = "DEBUG"
