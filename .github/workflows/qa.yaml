@@ -1,0 +1,53 @@
+name: QA Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: read-all
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    environment: qa
+
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.7"
+
+      - name: Code Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Initialize Terraform
+        run: |
+          terraform -chdir=./infrastructure init \
+          -backend-config=bucket=apollo416-apollo-qa \
+          -backend-config=key=qa/app/terraform.tfstate \
+          -backend-config=dynamodb_table=apollo416-apollo-qa
+
+      - name: Terraform plan
+        run: |
+          terraform -chdir=./infrastructure plan \
+          -var='env=qa' \
+          -var='rev=main' \
+          -out=tfplan.out
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve tfplan.out
